@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, #root { height: 100%; }
+
+html[dir='rtl'] { font-family: 'Cairo', 'Tajawal', 'Inter', system-ui, sans-serif; }
+html[dir='ltr'] { font-family: 'Inter', system-ui, sans-serif; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
+
+@layer components {
+  .card {
+    @apply bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800/70 rounded-2xl shadow-sm;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 hover:border-brand-300 dark:hover:border-brand-700;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-lg shadow-brand-600/20 hover:shadow-xl hover:shadow-brand-600/30 hover:scale-[1.02] active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800;
+  }
+  .btn-danger {
+    @apply btn bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60;
+  }
+  .input {
+    @apply w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-br from-brand-600 via-brand-500 to-accent-500 bg-clip-text text-transparent;
+  }
+  .glow {
+    box-shadow: 0 0 60px -10px rgba(99, 102, 241, 0.35);
+  }
+  .shimmer-bg {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s linear infinite;
+  }
+}
+
+/* RTL flips */
+html[dir='rtl'] .flip-rtl { transform: scaleX(-1); }
+
+/*
+ * Motion safety-net: if the browser tab is backgrounded or Framer Motion's
+ * rAF loop is throttled (headless, hidden, or perf-constrained), this
+ * fallback keyframe ensures content never stays invisible.
+ * When the real animation runs, it overrides this via inline style.
+ */
+@keyframes __motionSafetyFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeInUp {
+  animation: __motionSafetyFadeIn 0.25s ease-out forwards;
+}
+
+/* If Framer Motion leaves elements stuck at opacity:0 for >1s, the CSS
+   fallback below brings them back. The 1s delay avoids clobbering real
+   in-progress animations. */
+@keyframes __motionRecover {
+  to { opacity: 1 !important; }
+}
+main [style*="opacity: 0"],
+main [style*="opacity:0"] {
+  animation: __motionRecover 0s 1s linear forwards;
+}

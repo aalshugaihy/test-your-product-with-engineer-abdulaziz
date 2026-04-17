@@ -1,0 +1,3 @@
+# Single-page-app fallback for any static host that honors a _redirects file
+# (Netlify, Render static sites, Cloudflare Pages, etc.)
+/*    /index.html   200
