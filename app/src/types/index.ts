@@ -40,15 +40,49 @@ export interface LearningObjective {
   text: string
 }
 
+export interface LessonSection {
+  heading: string
+  body: string // markdown-formatted
+}
+
+export interface Exercise {
+  id: string
+  title: string
+  instructions: string
+  successCriteria: string[]
+  estimatedMins?: number
+}
+
+export interface Resource {
+  type: 'book' | 'article' | 'video' | 'tool' | 'template'
+  title: string
+  note?: string
+}
+
+export interface AssessmentCriterion {
+  criterion: string
+  weight: number // 0-100
+  description: string
+}
+
 export interface Module {
   id: string
   order: number
   title: string
   summary: string
-  content: string
+  content: string // main lesson body (markdown)
   transformation: string
   objectives: LearningObjective[]
   durationMins?: number
+  // Detailed expert content
+  keyConcepts?: string[]
+  lessonSections?: LessonSection[] // structured deep content
+  exercises?: Exercise[]
+  examples?: string[] // real-world examples
+  commonMistakes?: string[]
+  resources?: Resource[]
+  assessment?: AssessmentCriterion[]
+  instructorNotes?: string
 }
 
 export interface CurriculumBlueprint {

@@ -16,7 +16,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { useStore } from '@/store'
-import { runDeepResearch } from '@/lib/mockAI'
+import { aiRunDeepResearch as runDeepResearch } from '@/lib/aiGenerators'
 import Markdown from '@/components/Markdown'
 import DetailedProgress from '@/components/DetailedProgress'
 import NextSteps from '@/components/NextSteps'

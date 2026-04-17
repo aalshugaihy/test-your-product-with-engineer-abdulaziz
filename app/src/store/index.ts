@@ -17,6 +17,8 @@ import type {
   Status,
   LearningObjective,
 } from '@/types'
+import { generateExpertCurriculum } from '@/lib/expertCurriculum'
+import { aiGenerateCurriculumModules } from '@/lib/aiGenerators'
 
 interface HistoryState<T> {
   past: T[]
@@ -72,7 +74,7 @@ interface AppState {
   addObjective: (courseId: string, moduleId: string) => void
   updateObjective: (courseId: string, moduleId: string, objId: string, text: string) => void
   deleteObjective: (courseId: string, moduleId: string, objId: string) => void
-  generateCurriculumAI: (courseId: string) => void
+  generateCurriculumAI: (courseId: string) => Promise<void>
   saveCurriculumDraft: (courseId: string) => void
   sendCurriculumForReview: (courseId: string) => void
   addComment: (courseId: string, text: string, moduleId?: string, reasonCode?: string) => void
@@ -348,102 +350,54 @@ export const useStore = create<AppState>()(
         }))
       },
 
-      generateCurriculumAI: (courseId) => {
+      generateCurriculumAI: async (courseId) => {
         const course = get().courses.find((c) => c.id === courseId)
         const idea = get().ideas[courseId]
         const research = get().research[courseId]
-        get().ensureCurriculum(courseId)
+        const existing = get().ensureCurriculum(courseId)
 
         const baseTitle =
           idea?.ideas.find((i) => i.isStrongest)?.title ||
           course?.name ||
           'منهج جديد'
 
-        const mkObj = (t: string): LearningObjective => ({ id: uuid(), text: t })
-        const modules: Module[] = [
-          {
-            id: uuid(),
-            order: 1,
-            title: 'الأساسيات والإطار الذهني',
-            summary: 'تهيئة المتعلم ذهنياً وتوضيح الهدف النهائي.',
-            content: 'تغطي هذه الوحدة الإطار الذهني المطلوب قبل البدء، وتُعرّف المتعلم بخريطة الرحلة.',
-            transformation: 'ينتقل المتعلم من التشتت إلى وضوح الهدف.',
-            objectives: [
-              mkObj('يُعرّف المتعلم الهدف النهائي بدقة'),
-              mkObj('يرسم المتعلم خريطة مسار التعلم'),
-            ],
-            durationMins: 60,
-          },
-          {
-            id: uuid(),
-            order: 2,
-            title: 'المفاهيم الجوهرية',
-            summary: 'أعمدة المعرفة التي يُبنى عليها كل شيء.',
-            content: 'شرح المفاهيم الأساسية مع أمثلة تطبيقية فورية.',
-            transformation: 'ينتقل المتعلم من المعرفة السطحية إلى الفهم البنيوي.',
-            objectives: [
-              mkObj('يُفسّر المتعلم 5 مفاهيم جوهرية'),
-              mkObj('يربط المتعلم المفاهيم بسيناريوهات واقعية'),
-            ],
-            durationMins: 90,
-          },
-          {
-            id: uuid(),
-            order: 3,
-            title: 'التطبيق العملي الأول',
-            summary: 'أول مشروع حقيقي يبنيه المتعلم بيديه.',
-            content: 'تمرين عملي موجَّه بخطوات واضحة ومعيار نجاح محدد.',
-            transformation: 'ينتقل المتعلم من النظرية إلى النتيجة الملموسة.',
-            objectives: [
-              mkObj('ينجز المتعلم المشروع التطبيقي الأول'),
-              mkObj('يقيّم المتعلم جودة مخرجه بمعايير واضحة'),
-            ],
-            durationMins: 120,
-          },
-          {
-            id: uuid(),
-            order: 4,
-            title: 'التعميق والمستويات المتقدمة',
-            summary: 'تقنيات أعمق تفتح قدرات جديدة.',
-            content: 'تعمّق في تقنيات متقدمة مع دراسات حالة.',
-            transformation: 'ينتقل المتعلم من المبتدئ إلى الممارس.',
-            objectives: [mkObj('يطبّق المتعلم 3 تقنيات متقدمة')],
-            durationMins: 90,
-          },
-          {
-            id: uuid(),
-            order: 5,
-            title: 'المشروع الختامي',
-            summary: 'دمج كل ما تعلّمه في مخرج نهائي قابل للعرض.',
-            content: 'مشروع شامل + مراجعة + خطة تطوير شخصية.',
-            transformation: 'ينتقل المتعلم من المتعلم إلى المنتج.',
-            objectives: [
-              mkObj('يُسلّم المتعلم مشروعاً نهائياً'),
-              mkObj('يصوغ المتعلم خطة تطوير ذاتية لاحقة'),
-            ],
-            durationMins: 150,
-          },
-        ]
+        const topic = baseTitle.replace(/^(ورشة|دليل|دورة|منهج|للمحترفين)/g, '').trim() || baseTitle
+
+        // Use AI if configured, otherwise fall back to expert templates.
+        const modules = await aiGenerateCurriculumModules(
+          topic,
+          existing.audience || research?.audience || 'المحترفون الطموحون',
+          existing.startingPoint || 'معرفة عامة بالمجال دون قدرة على التطبيق',
+          existing.destination || `القدرة على إنتاج ${topic} بجودة احترافية`,
+          existing.maxModules || 5
+        )
 
         get().updateCurriculum(courseId, (c) => ({
           ...c,
           title: baseTitle,
           startingPoint: c.startingPoint || 'معرفة عامة بالمجال دون قدرة على التطبيق',
-          destination: c.destination || `القدرة على إنتاج ${baseTitle} بجودة احترافية`,
-          audience: c.audience || research?.audience || 'المهنيون الطموحون',
+          destination: c.destination || `القدرة على إنتاج ${topic} بجودة احترافية`,
+          audience: c.audience || research?.audience || 'المحترفون الطموحون',
           transformationMap:
             c.transformationMap ||
-            `من ${c.startingPoint || 'البداية'} إلى ${c.destination || 'الهدف'} عبر 5 تحوّلات متتابعة.`,
+            `رحلة 5 تحولات من ${c.startingPoint || 'المعرفة السطحية'} إلى ${c.destination || 'الإتقان المهني'}:
+1. بناء الإطار الذهني ومعايير النجاح
+2. استيعاب المنظومة الجوهرية
+3. إنتاج أول مخرج قابل للعرض
+4. الانتقال إلى مستوى المتقدم
+5. تتويج الرحلة بمشروع احترافي وخطة مستقبلية`,
           modules,
         }))
 
-        // Mark progress
+        // Mark progress and return early — the old inline modules block below is skipped
         set({
           courses: get().courses.map((c) =>
-            c.id === courseId ? { ...c, progress: { ...c.progress, curriculum: true }, currentStage: 'curriculum' } : c
+            c.id === courseId
+              ? { ...c, progress: { ...c.progress, curriculum: true }, currentStage: 'curriculum' }
+              : c
           ),
         })
-        get().toast('تم توليد المنهج بالذكاء الاصطناعي', 'success')
+        get().toast('تم توليد المنهج التفصيلي — كل وحدة تحتوي على محتوى عميق', 'success')
       },
 
       saveCurriculumDraft: (courseId) => {
